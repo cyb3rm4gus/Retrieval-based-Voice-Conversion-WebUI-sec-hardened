@@ -562,4 +562,4 @@ if __name__ == "__main__":
     from configs.config import Config
     audio_api.config = Config()
     audio_api.initialize_queues()
-    uvicorn.run(app, host="0.0.0.0", port=6242)
+    uvicorn.run(app, host="127.0.0.1", port=6242)

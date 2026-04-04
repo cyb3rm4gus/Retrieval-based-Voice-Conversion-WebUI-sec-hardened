@@ -220,19 +220,18 @@ def preprocess_dataset(trainset_dir, exp_dir, sr, n_p):
     os.makedirs("%s/logs/%s" % (now_dir, exp_dir), exist_ok=True)
     f = open("%s/logs/%s/preprocess.log" % (now_dir, exp_dir), "w")
     f.close()
-    cmd = '"%s" infer/modules/train/preprocess.py "%s" %s %s "%s/logs/%s" %s %.1f' % (
+    cmd = [
         config.python_cmd,
+        "infer/modules/train/preprocess.py",
         trainset_dir,
-        sr,
-        n_p,
-        now_dir,
-        exp_dir,
-        config.noparallel,
-        config.preprocess_per,
-    )
-    logger.info("Execute: " + cmd)
-    # , stdin=PIPE, stdout=PIPE,stderr=PIPE,cwd=now_dir
-    p = Popen(cmd, shell=True)
+        str(sr),
+        str(n_p),
+        "%s/logs/%s" % (now_dir, exp_dir),
+        str(config.noparallel),
+        str(config.preprocess_per),
+    ]
+    logger.info("Execute: " + " ".join(cmd))
+    p = Popen(cmd)
     # 煞笔gr, popen read都非得全跑完了再一次性读取, 不用gr就正常读一句输出一句;只能额外弄出一个文本流定时读
     done = [False]
     threading.Thread(
@@ -262,20 +261,15 @@ def extract_f0_feature(gpus, n_p, f0method, if_f0, exp_dir, version19, gpus_rmvp
     f.close()
     if if_f0:
         if f0method != "rmvpe_gpu":
-            cmd = (
-                '"%s" infer/modules/train/extract/extract_f0_print.py "%s/logs/%s" %s %s'
-                % (
-                    config.python_cmd,
-                    now_dir,
-                    exp_dir,
-                    n_p,
-                    f0method,
-                )
-            )
-            logger.info("Execute: " + cmd)
-            p = Popen(
-                cmd, shell=True, cwd=now_dir
-            )  # , stdin=PIPE, stdout=PIPE,stderr=PIPE
+            cmd = [
+                config.python_cmd,
+                "infer/modules/train/extract/extract_f0_print.py",
+                "%s/logs/%s" % (now_dir, exp_dir),
+                str(n_p),
+                str(f0method),
+            ]
+            logger.info("Execute: " + " ".join(cmd))
+            p = Popen(cmd, cwd=now_dir)
             # 煞笔gr, popen read都非得全跑完了再一次性读取, 不用gr就正常读一句输出一句;只能额外弄出一个文本流定时读
             done = [False]
             threading.Thread(
@@ -291,22 +285,17 @@ def extract_f0_feature(gpus, n_p, f0method, if_f0, exp_dir, version19, gpus_rmvp
                 leng = len(gpus_rmvpe)
                 ps = []
                 for idx, n_g in enumerate(gpus_rmvpe):
-                    cmd = (
-                        '"%s" infer/modules/train/extract/extract_f0_rmvpe.py %s %s %s "%s/logs/%s" %s '
-                        % (
-                            config.python_cmd,
-                            leng,
-                            idx,
-                            n_g,
-                            now_dir,
-                            exp_dir,
-                            config.is_half,
-                        )
-                    )
-                    logger.info("Execute: " + cmd)
-                    p = Popen(
-                        cmd, shell=True, cwd=now_dir
-                    )  # , shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE, cwd=now_dir
+                    cmd = [
+                        config.python_cmd,
+                        "infer/modules/train/extract/extract_f0_rmvpe.py",
+                        str(leng),
+                        str(idx),
+                        str(n_g),
+                        "%s/logs/%s" % (now_dir, exp_dir),
+                        str(config.is_half),
+                    ]
+                    logger.info("Execute: " + " ".join(cmd))
+                    p = Popen(cmd, cwd=now_dir)
                     ps.append(p)
                 # 煞笔gr, popen read都非得全跑完了再一次性读取, 不用gr就正常读一句输出一句;只能额外弄出一个文本流定时读
                 done = [False]
@@ -318,18 +307,13 @@ def extract_f0_feature(gpus, n_p, f0method, if_f0, exp_dir, version19, gpus_rmvp
                     ),
                 ).start()
             else:
-                cmd = (
-                    config.python_cmd
-                    + ' infer/modules/train/extract/extract_f0_rmvpe_dml.py "%s/logs/%s" '
-                    % (
-                        now_dir,
-                        exp_dir,
-                    )
-                )
-                logger.info("Execute: " + cmd)
-                p = Popen(
-                    cmd, shell=True, cwd=now_dir
-                )  # , shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE, cwd=now_dir
+                cmd = [
+                    config.python_cmd,
+                    "infer/modules/train/extract/extract_f0_rmvpe_dml.py",
+                    "%s/logs/%s" % (now_dir, exp_dir),
+                ]
+                logger.info("Execute: " + " ".join(cmd))
+                p = Popen(cmd, cwd=now_dir)
                 p.wait()
                 done = [True]
         while 1:
@@ -355,24 +339,19 @@ def extract_f0_feature(gpus, n_p, f0method, if_f0, exp_dir, version19, gpus_rmvp
     leng = len(gpus)
     ps = []
     for idx, n_g in enumerate(gpus):
-        cmd = (
-            '"%s" infer/modules/train/extract_feature_print.py %s %s %s %s "%s/logs/%s" %s %s'
-            % (
-                config.python_cmd,
-                config.device,
-                leng,
-                idx,
-                n_g,
-                now_dir,
-                exp_dir,
-                version19,
-                config.is_half,
-            )
-        )
-        logger.info("Execute: " + cmd)
-        p = Popen(
-            cmd, shell=True, cwd=now_dir
-        )  # , shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE, cwd=now_dir
+        cmd = [
+            config.python_cmd,
+            "infer/modules/train/extract_feature_print.py",
+            str(config.device),
+            str(leng),
+            str(idx),
+            str(n_g),
+            "%s/logs/%s" % (now_dir, exp_dir),
+            str(version19),
+            str(config.is_half),
+        ]
+        logger.info("Execute: " + " ".join(cmd))
+        p = Popen(cmd, cwd=now_dir)
         ps.append(p)
     # 煞笔gr, popen read都非得全跑完了再一次性读取, 不用gr就正常读一句输出一句;只能额外弄出一个文本流定时读
     done = [False]
@@ -567,47 +546,32 @@ def click_train(
                 sort_keys=True,
             )
             f.write("\n")
+    cmd = [
+        config.python_cmd,
+        "infer/modules/train/train.py",
+        "-e", str(exp_dir1),
+        "-sr", str(sr2),
+        "-f0", str(1 if if_f0_3 else 0),
+        "-bs", str(batch_size12),
+    ]
     if gpus16:
-        cmd = (
-            '"%s" infer/modules/train/train.py -e "%s" -sr %s -f0 %s -bs %s -g %s -te %s -se %s %s %s -l %s -c %s -sw %s -v %s'
-            % (
-                config.python_cmd,
-                exp_dir1,
-                sr2,
-                1 if if_f0_3 else 0,
-                batch_size12,
-                gpus16,
-                total_epoch11,
-                save_epoch10,
-                "-pg %s" % pretrained_G14 if pretrained_G14 != "" else "",
-                "-pd %s" % pretrained_D15 if pretrained_D15 != "" else "",
-                1 if if_save_latest13 == i18n("是") else 0,
-                1 if if_cache_gpu17 == i18n("是") else 0,
-                1 if if_save_every_weights18 == i18n("是") else 0,
-                version19,
-            )
-        )
-    else:
-        cmd = (
-            '"%s" infer/modules/train/train.py -e "%s" -sr %s -f0 %s -bs %s -te %s -se %s %s %s -l %s -c %s -sw %s -v %s'
-            % (
-                config.python_cmd,
-                exp_dir1,
-                sr2,
-                1 if if_f0_3 else 0,
-                batch_size12,
-                total_epoch11,
-                save_epoch10,
-                "-pg %s" % pretrained_G14 if pretrained_G14 != "" else "",
-                "-pd %s" % pretrained_D15 if pretrained_D15 != "" else "",
-                1 if if_save_latest13 == i18n("是") else 0,
-                1 if if_cache_gpu17 == i18n("是") else 0,
-                1 if if_save_every_weights18 == i18n("是") else 0,
-                version19,
-            )
-        )
-    logger.info("Execute: " + cmd)
-    p = Popen(cmd, shell=True, cwd=now_dir)
+        cmd += ["-g", str(gpus16)]
+    cmd += [
+        "-te", str(total_epoch11),
+        "-se", str(save_epoch10),
+    ]
+    if pretrained_G14 != "":
+        cmd += ["-pg", str(pretrained_G14)]
+    if pretrained_D15 != "":
+        cmd += ["-pd", str(pretrained_D15)]
+    cmd += [
+        "-l", str(1 if if_save_latest13 == i18n("是") else 0),
+        "-c", str(1 if if_cache_gpu17 == i18n("是") else 0),
+        "-sw", str(1 if if_save_every_weights18 == i18n("是") else 0),
+        "-v", str(version19),
+    ]
+    logger.info("Execute: " + " ".join(cmd))
+    p = Popen(cmd, cwd=now_dir)
     p.wait()
     return "训练结束, 您可查看控制台训练日志或实验文件夹下的train.log"
 
@@ -786,7 +750,7 @@ def change_info_(ckpt_path):
         with open(
             ckpt_path.replace(os.path.basename(ckpt_path), "train.log"), "r"
         ) as f:
-            info = eval(f.read().strip("\n").split("\n")[0].split("\t")[-1])
+            info = json.loads(f.read().strip("\n").split("\n")[0].split("\t")[-1])
             sr, f0 = info["sample_rate"], info["if_f0"]
             version = "v2" if ("version" in info and info["version"] == "v2") else "v1"
             return sr, str(f0), version
@@ -1612,7 +1576,7 @@ with gr.Blocks(title="RVC WebUI") as app:
         app.queue(concurrency_count=511, max_size=1022).launch(share=True)
     else:
         app.queue(concurrency_count=511, max_size=1022).launch(
-            server_name="0.0.0.0",
+            server_name="127.0.0.1",
             inbrowser=not config.noautoopen,
             server_port=config.listen_port,
             quiet=True,
