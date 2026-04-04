@@ -9,6 +9,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from infer.lib.safe_load import safe_torch_load
+
 
 def cal_cross_attn(to_q, to_k, to_v, rand_input):
     hidden_dim, embed_dim = to_q.shape
@@ -55,7 +57,7 @@ def eval(model, n, input):
 
 def main(path, root):
     torch.manual_seed(114514)
-    model_a = torch.load(path, map_location="cpu")["weight"]
+    model_a = safe_torch_load(path)["weight"]
 
     logger.info("Query:\t\t%s\t%s" % (path, model_hash(path)))
 
@@ -74,7 +76,7 @@ def main(path, root):
 
     for name in sorted(list(os.listdir(root))):
         path = "%s/%s" % (root, name)
-        model_b = torch.load(path, map_location="cpu")["weight"]
+        model_b = safe_torch_load(path)["weight"]
 
         sims = []
         for n in range(6):

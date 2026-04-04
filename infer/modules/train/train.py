@@ -18,6 +18,8 @@ from random import randint, shuffle
 
 import torch
 
+from infer.lib.safe_load import safe_torch_load
+
 try:
     import intel_extension_for_pytorch as ipex  # pylint: disable=import-error, unused-import
 
@@ -228,13 +230,13 @@ def run(rank, n_gpus, hps, logger: logging.Logger):
             if hasattr(net_g, "module"):
                 logger.info(
                     net_g.module.load_state_dict(
-                        torch.load(hps.pretrainG, map_location="cpu")["model"]
+                        safe_torch_load(hps.pretrainG)["model"]
                     )
                 )  ##测试不加载优化器
             else:
                 logger.info(
                     net_g.load_state_dict(
-                        torch.load(hps.pretrainG, map_location="cpu")["model"]
+                        safe_torch_load(hps.pretrainG)["model"]
                     )
                 )  ##测试不加载优化器
         if hps.pretrainD != "":
@@ -243,13 +245,13 @@ def run(rank, n_gpus, hps, logger: logging.Logger):
             if hasattr(net_d, "module"):
                 logger.info(
                     net_d.module.load_state_dict(
-                        torch.load(hps.pretrainD, map_location="cpu")["model"]
+                        safe_torch_load(hps.pretrainD)["model"]
                     )
                 )
             else:
                 logger.info(
                     net_d.load_state_dict(
-                        torch.load(hps.pretrainD, map_location="cpu")["model"]
+                        safe_torch_load(hps.pretrainD)["model"]
                     )
                 )
 

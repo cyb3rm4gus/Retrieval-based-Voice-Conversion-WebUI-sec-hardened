@@ -5,6 +5,7 @@ from collections import OrderedDict
 
 import torch
 
+from infer.lib.safe_load import safe_torch_load
 from i18n.i18n import I18nAuto
 
 i18n = I18nAuto()
@@ -50,7 +51,7 @@ def savee(ckpt, sr, if_f0, name, epoch, version, hps):
 
 def show_info(path):
     try:
-        a = torch.load(path, map_location="cpu")
+        a = safe_torch_load(path)
         return "模型信息:%s\n采样率:%s\n模型是否输入音高引导:%s\n版本:%s" % (
             a.get("info", "None"),
             a.get("sr", "None"),
@@ -63,7 +64,7 @@ def show_info(path):
 
 def extract_small_model(path, name, sr, if_f0, info, version):
     try:
-        ckpt = torch.load(path, map_location="cpu")
+        ckpt = safe_torch_load(path)
         if "model" in ckpt:
             ckpt = ckpt["model"]
         opt = OrderedDict()
@@ -193,7 +194,7 @@ def extract_small_model(path, name, sr, if_f0, info, version):
 
 def change_info(path, info, name):
     try:
-        ckpt = torch.load(path, map_location="cpu")
+        ckpt = safe_torch_load(path)
         ckpt["info"] = info
         if name == "":
             name = os.path.basename(path)
@@ -216,8 +217,8 @@ def merge(path1, path2, alpha1, sr, f0, info, name, version):
                 opt["weight"][key] = a[key]
             return opt
 
-        ckpt1 = torch.load(path1, map_location="cpu")
-        ckpt2 = torch.load(path2, map_location="cpu")
+        ckpt1 = safe_torch_load(path1)
+        ckpt2 = safe_torch_load(path2)
         cfg = ckpt1["config"]
         if "model" in ckpt1:
             ckpt1 = extract(ckpt1)

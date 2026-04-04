@@ -5,9 +5,11 @@ import torch
 from tqdm import tqdm
 from collections import OrderedDict
 
+from infer.lib.safe_load import safe_torch_load
+
 
 def load_inputs(path, device, is_half=False):
-    parm = torch.load(path, map_location=torch.device("cpu"))
+    parm = safe_torch_load(path)
     for key in parm.keys():
         parm[key] = parm[key].to(device)
         if is_half and parm[key].dtype == torch.float32:

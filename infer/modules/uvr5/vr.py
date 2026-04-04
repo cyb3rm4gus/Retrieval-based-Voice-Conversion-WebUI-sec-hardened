@@ -8,6 +8,8 @@ import numpy as np
 import soundfile as sf
 import torch
 
+from infer.lib.safe_load import safe_torch_load
+
 from infer.lib.uvr5_pack.lib_v5 import nets_61968KB as Nets
 from infer.lib.uvr5_pack.lib_v5 import spec_utils
 from infer.lib.uvr5_pack.lib_v5.model_param_init import ModelParameters
@@ -30,7 +32,7 @@ class AudioPre:
         }
         mp = ModelParameters("infer/lib/uvr5_pack/lib_v5/modelparams/4band_v2.json")
         model = Nets.CascadedASPPNet(mp.param["bins"] * 2)
-        cpk = torch.load(model_path, map_location="cpu")
+        cpk = safe_torch_load(model_path)
         model.load_state_dict(cpk)
         model.eval()
         if is_half:
@@ -211,7 +213,7 @@ class AudioPreDeEcho:
         mp = ModelParameters("infer/lib/uvr5_pack/lib_v5/modelparams/4band_v3.json")
         nout = 64 if "DeReverb" in model_path else 48
         model = CascadedNet(mp.param["bins"] * 2, nout)
-        cpk = torch.load(model_path, map_location="cpu")
+        cpk = safe_torch_load(model_path)
         model.load_state_dict(cpk)
         model.eval()
         if is_half:

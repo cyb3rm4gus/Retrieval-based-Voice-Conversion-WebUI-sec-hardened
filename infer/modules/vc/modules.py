@@ -7,6 +7,7 @@ import numpy as np
 import soundfile as sf
 import torch
 from io import BytesIO
+from infer.lib.safe_load import safe_torch_load
 
 from infer.lib.audio import load_audio, wav2
 from infer.lib.infer_pack.models import (
@@ -100,7 +101,7 @@ class VC:
         person = f'{os.getenv("weight_root")}/{sid}'
         logger.info(f"Loading: {person}")
 
-        self.cpt = torch.load(person, map_location="cpu")
+        self.cpt = safe_torch_load(person)
         self.tgt_sr = self.cpt["config"][-1]
         self.cpt["config"][-3] = self.cpt["weight"]["emb_g.weight"].shape[0]  # n_spk
         self.if_f0 = self.cpt.get("f0", 1)

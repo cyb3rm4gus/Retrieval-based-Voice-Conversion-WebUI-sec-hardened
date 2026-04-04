@@ -1,10 +1,11 @@
 import torch
 import onnxsim
 import onnx
+from infer.lib.safe_load import safe_torch_load
 from infer.lib.infer_pack.models_onnx import SynthesizerTrnMsNSFsidM
 
 def export_onnx(ModelPath, ExportedPath):
-    cpt = torch.load(ModelPath, map_location="cpu")
+    cpt = safe_torch_load(ModelPath)
     cpt["config"][-3] = cpt["weight"]["emb_g.weight"].shape[0]
     vec_channels = 256 if cpt.get("version", "v1") == "v1" else 768
 
