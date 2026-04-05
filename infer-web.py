@@ -1559,6 +1559,115 @@ with gr.Blocks(title="RVC WebUI") as app:
                 export_onnx, [ckpt_dir, onnx_dir], infoOnnx, api_name="export_onnx"
             )
 
+        with gr.TabItem("Real-Time VC"):
+            _rt_bridge = None
+
+            def rt_refresh_devices():
+                global _rt_bridge
+                try:
+                    from infer.lib.rtrvc_bridge import RealtimeVCBridge
+                    if _rt_bridge is None:
+                        _rt_bridge = RealtimeVCBridge(config)
+                    inputs = _rt_bridge.list_input_devices()
+                    outputs = _rt_bridge.list_output_devices()
+                    return (
+                        gr.update(choices=["%d: %s" % (i, n) for i, n in inputs]),
+                        gr.update(choices=["%d: %s" % (i, n) for i, n in outputs]),
+                        "Devices refreshed",
+                    )
+                except Exception:
+                    return (
+                        gr.update(),
+                        gr.update(),
+                        "Error: %s" % traceback.format_exc(),
+                    )
+
+            def rt_start(model, index, input_dev, output_dev, pitch, f0method, index_rate):
+                global _rt_bridge
+                try:
+                    from infer.lib.rtrvc_bridge import RealtimeVCBridge
+                    if _rt_bridge is None:
+                        _rt_bridge = RealtimeVCBridge(config)
+                    if not model:
+                        yield "Error: select a voice model"
+                        return
+                    if not input_dev or not output_dev:
+                        yield "Error: select input and output devices"
+                        return
+                    pth_path = os.path.join(weight_root, model)
+                    idx_path = index if index else ""
+                    in_idx = int(input_dev.split(":")[0])
+                    out_idx = int(output_dev.split(":")[0])
+                    yield "Loading model..."
+                    result = _rt_bridge.start(
+                        pth_path, idx_path, in_idx, out_idx,
+                        pitch=pitch, f0method=f0method, index_rate=index_rate,
+                    )
+                    yield result
+                except Exception:
+                    yield "Error: %s" % traceback.format_exc()
+
+            def rt_stop():
+                global _rt_bridge
+                if _rt_bridge is not None:
+                    return _rt_bridge.stop()
+                return "Not running"
+
+            def rt_update_pitch(pitch):
+                global _rt_bridge
+                if _rt_bridge is not None and _rt_bridge.is_running():
+                    _rt_bridge.update_pitch(pitch)
+
+            def rt_update_index_rate(rate):
+                global _rt_bridge
+                if _rt_bridge is not None and _rt_bridge.is_running():
+                    _rt_bridge.update_index_rate(rate)
+
+            with gr.Row():
+                with gr.Column():
+                    rt_model = gr.Dropdown(
+                        label="Voice Model",
+                        choices=sorted(names),
+                    )
+                    rt_index = gr.Dropdown(
+                        label="Index File (optional)",
+                        choices=sorted(index_paths),
+                        allow_custom_value=True,
+                    )
+                    rt_input_device = gr.Dropdown(label="Input Device (Microphone)")
+                    rt_output_device = gr.Dropdown(label="Output Device (e.g. rvc_sink)")
+                    rt_pitch = gr.Slider(
+                        -24, 24, value=0, step=1, label="Pitch Shift (semitones)"
+                    )
+                    rt_f0method = gr.Radio(
+                        ["rmvpe", "fcpe", "crepe", "pm"],
+                        value="rmvpe",
+                        label="F0 Method (rmvpe/fcpe recommended for GPU)",
+                    )
+                    rt_index_rate = gr.Slider(
+                        0.0, 1.0, value=0.0, step=0.05, label="Index Rate"
+                    )
+                with gr.Column():
+                    rt_start_btn = gr.Button("Start", variant="primary")
+                    rt_stop_btn = gr.Button("Stop", variant="stop")
+                    rt_refresh_btn = gr.Button("Refresh Devices")
+                    rt_status = gr.Textbox(label="Status", interactive=False, value="Stopped")
+
+            rt_refresh_btn.click(
+                rt_refresh_devices,
+                [],
+                [rt_input_device, rt_output_device, rt_status],
+            )
+            rt_start_btn.click(
+                rt_start,
+                [rt_model, rt_index, rt_input_device, rt_output_device,
+                 rt_pitch, rt_f0method, rt_index_rate],
+                [rt_status],
+            )
+            rt_stop_btn.click(rt_stop, [], [rt_status])
+            rt_pitch.release(rt_update_pitch, [rt_pitch], [])
+            rt_index_rate.release(rt_update_index_rate, [rt_index_rate], [])
+
         tab_faq = i18n("常见问题解答")
         with gr.TabItem(tab_faq):
             try:
