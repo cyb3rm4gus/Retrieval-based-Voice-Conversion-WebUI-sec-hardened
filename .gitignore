@@ -29,3 +29,6 @@ ffmpeg.*
 ffprobe.*
 
 RVC-Security-Advisory.md
+
+# Claude Code agent worktrees (auto-created; never commit)
+.claude/worktrees/

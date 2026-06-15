@@ -1,6 +1,8 @@
 # syntax=docker/dockerfile:1
 
-FROM nvidia/cuda:11.6.2-cudnn8-runtime-ubuntu20.04
+# Ubuntu 22.04 (jammy) ships Python 3.10 natively (no deadsnakes PPA needed),
+# and CUDA 12.1 matches the torch==2.4.0+cu121 wheels pinned in requirements.txt.
+FROM nvidia/cuda:12.1.1-cudnn8-runtime-ubuntu22.04
 
 EXPOSE 7865
 
@@ -8,28 +10,21 @@ WORKDIR /app
 
 COPY . .
 
-# Install dependenceis to add PPAs
+# System deps + Python 3.10 (native to Ubuntu 22.04 — no third-party PPA).
+# build-essential + python3.10-dev are needed to compile fairseq/pyworld/etc.
 RUN apt-get update && \
-    apt-get install -y -qq ffmpeg aria2 && apt clean && \
-    apt-get install -y software-properties-common && \
+    apt-get install -y --no-install-recommends \
+        build-essential ffmpeg aria2 \
+        python3.10 python3.10-dev python3.10-venv python3-pip python3-distutils && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Add the deadsnakes PPA to get Python 3.10
-RUN add-apt-repository ppa:deadsnakes/ppa
-
-# Install Python 3.10 and pip
-RUN apt-get update && \
-    apt-get install -y build-essential python-dev python3-dev python3.10-distutils python3.10-dev python3.10 curl && \
-    apt-get clean && \
-    update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 1 && \
-    curl https://bootstrap.pypa.io/get-pip.py | python3.10
-
-# Set Python 3.10 as the default
-RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.10 1
+# Point python / python3 at 3.10
+RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 1 && \
+    update-alternatives --install /usr/bin/python python /usr/bin/python3.10 1
 
 RUN python3 -m pip install --upgrade pip==24.0
-RUN python3 -m pip install --no-cache-dir -r requirements.txt
+RUN python3 -m pip install --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cu121 -r requirements.txt
 
 RUN aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/pretrained_v2/D40k.pth -d assets/pretrained_v2/ -o D40k.pth
 RUN aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/pretrained_v2/G40k.pth -d assets/pretrained_v2/ -o G40k.pth
