@@ -8,8 +8,6 @@ EXPOSE 7865
 
 WORKDIR /app
 
-COPY . .
-
 # System deps + Python 3.10 (native to Ubuntu 22.04 — no third-party PPA).
 # build-essential + python3.10-dev are needed to compile fairseq/pyworld/etc.
 RUN apt-get update && \
@@ -23,6 +21,9 @@ RUN apt-get update && \
 RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 1 && \
     update-alternatives --install /usr/bin/python python /usr/bin/python3.10 1
 
+# Install Python deps before copying the source, so editing application code
+# does not invalidate the (slow) pip install / model-download layers below.
+COPY requirements.txt .
 RUN python3 -m pip install --upgrade pip==24.0
 RUN python3 -m pip install --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cu121 -r requirements.txt
 
@@ -37,6 +38,9 @@ RUN aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://huggingface.co
 RUN aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/hubert_base.pt -d assets/hubert -o hubert_base.pt
 
 RUN aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/rmvpe.pt -d assets/rmvpe -o rmvpe.pt
+
+# Copy the application source last so code changes rebuild only this cheap layer.
+COPY . .
 
 VOLUME [ "/app/weights", "/app/opt" ]
 
